@@ -4,7 +4,7 @@
 	var data = {}
 
     if (!Scratch.extensions.unsandboxed) {
-        alert("This extension needs to be unsandboxed to run!")
+        alert("The JSON extension needs to be un-sandboxed")
         return
     }
 	
@@ -131,6 +131,29 @@
 					text: "Json",
 				},
 				{
+					opcode: "json_set",
+					blockType: Scratch.BlockType.COMMAND,
+					isEdgeActivated: true,
+					text: "set [k] in [name] to [v]",
+					arguments: {
+					"k":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "key",
+					},
+					"name":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "myObj",
+					},
+					"v":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "value",
+					},
+					},
+				},
+				{
 					opcode: "json_change",
 					blockType: Scratch.BlockType.COMMAND,
 					isEdgeActivated: true,
@@ -168,29 +191,6 @@
 					{
 						type: Scratch.ArgumentType.STRING,
 						defaultValue: "myObj",
-					},
-					},
-				},
-				{
-					opcode: "json_set",
-					blockType: Scratch.BlockType.COMMAND,
-					isEdgeActivated: true,
-					text: "set [k] in [name] to [v]",
-					arguments: {
-					"k":
-					{
-						type: Scratch.ArgumentType.STRING,
-						defaultValue: "key",
-					},
-					"name":
-					{
-						type: Scratch.ArgumentType.STRING,
-						defaultValue: "myObj",
-					},
-					"v":
-					{
-						type: Scratch.ArgumentType.STRING,
-						defaultValue: "value",
 					},
 					},
 				},
@@ -318,6 +318,24 @@
 					},
 				},
 				{
+					opcode: "arr_concat",
+					blockType: Scratch.BlockType.COMMAND,
+					isEdgeActivated: true,
+					text: "concat array [n2] onto [n1]",
+					arguments: {
+					"n1":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "myArray",
+					},
+					"n2":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "myOtherArray",
+					},
+					},
+				},
+				{
 					opcode: "arr_length",
 					blockType: Scratch.BlockType.REPORTER,
 					isEdgeActivated: true,
@@ -384,15 +402,88 @@
 					},
 					},
 				},
+				{
+					blockType: Scratch.BlockType.LABEL,
+					text: "List",
+				},
+				{
+					opcode: "arr_getlist",
+					blockType: Scratch.BlockType.COMMAND,
+					isEdgeActivated: true,
+					text: "set array [name] to list [list]",
+					arguments: {
+					"list":
+					{
+						type: Scratch.ArgumentType.STRING,
+						menu: "get_list",
+					},
+					"name":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "myArray",
+					},
+					},
+				},
+				{
+					opcode: "arr_setlist",
+					blockType: Scratch.BlockType.COMMAND,
+					isEdgeActivated: true,
+					text: "set list [list] to array [name]",
+					arguments: {
+					"list":
+					{
+						type: Scratch.ArgumentType.STRING,
+						menu: "get_list",
+					},
+					"name":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "myArray",
+					},
+					},
+				},
 			],
                 "menus":{
 					"json_type":{
 						acceptReporters: true,
 						items: ["Object", "Array"]
-					}
+					},
+					"get_list":{
+						acceptReporters: true,
+						items: "get_lists"
+					},
 				},
             }
         }
+		get_lists(args)
+		{
+		  const globalLists = Object.values(vm.runtime.getTargetForStage().variables).filter((x) => x.type == "list");
+		  const localLists = Object.values(vm.editingTarget.variables).filter((x) => x.type == "list");
+		  const uniqueLists = [...new Set([...globalLists, ...localLists])];
+		  if (uniqueLists.length === 0) {
+			return [
+			  {
+				text: "empty",
+				value: "empty",
+			  },
+			];
+		  }
+		  return uniqueLists.map((i) => ({
+			text: i.name,
+			value: i.id,
+		  }));
+		}
+		lookupList(list, util) {
+		  const byId = util.target.lookupVariableById(list);
+		  if (byId && byId.type === "list") {
+			return byId;
+		  }
+		  const byName = util.target.lookupVariableByNameAndType(list, "list");
+		  if (byName) {
+			return byName;
+		  }
+		  return null;
+		}
 		json_newobj(args)
 		{
 			let nm = args["name"];
@@ -521,6 +612,12 @@
 			let nm = args["name"];
 			data[nm].reverse()
 		}
+		arr_concat(args)
+		{
+			let a1 = args["n1"];
+			let a2 = args["n2"];
+			data[a1] = (data[a1].concat(data[a2]));
+		}
 		arr_join(args)
 		{
 			let nm = args["name"];
@@ -532,6 +629,24 @@
 			let nm = args["name"];
 			let val = args["v"];
 			return data[nm][val]
+		}
+		arr_getlist(args, util)
+		{
+			let nm = args["name"];
+			let list = this.lookupList(args["list"], util);
+			if(Array.isArray(data[nm]))
+			{
+				data[nm] = list.value;
+			}
+		}
+		arr_setlist(args, util)
+		{
+			let nm = args["name"];
+			let list = this.lookupList(args["list"], util);
+			if(Array.isArray(data[nm]))
+			{
+				list.value = data[nm];
+			}
 		}
     }
 
