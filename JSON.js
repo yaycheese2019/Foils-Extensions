@@ -10,8 +10,8 @@
 	
 	/*
 		Extension by Foil
-		The extension is similar to the one skyhigh made but it manipulates json without parsing or stringifying, meaning it's super fast
 		Can add 30,000 items to an array at instant speeds
+		Code was created from scratch and not modified from any other extensions but is also inspired by skyhigh
 	*/
 	
     class Extension {
@@ -19,7 +19,7 @@
 		{
             return {
                 "id": "extensionID",
-                "name": "Fast JSON",
+                "name": "JSON Data",
                 "color1": "#3271D0",
                 "tbShow": true,
                 "blocks":[
@@ -213,6 +213,24 @@
 					},
 				},
 				{
+					opcode: "json_getbool",
+					blockType: Scratch.BlockType.BOOLEAN,
+					isEdgeActivated: true,
+					text: "value of [k] in [name] as boolean",
+					arguments: {
+					"k":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "key",
+					},
+					"name":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "myObj",
+					},
+					},
+				},
+				{
 					opcode: "json_length",
 					blockType: Scratch.BlockType.REPORTER,
 					isEdgeActivated: true,
@@ -252,10 +270,78 @@
 					},
 				},
 				{
+					blockType: Scratch.BlockType.LABEL,
+					text: "Json Paths",
+				},
+				{
+					opcode: "json_setpath",
+					blockType: Scratch.BlockType.COMMAND,
+					isEdgeActivated: true,
+					text: "set path [path] of [name] to [v]",
+					arguments: {
+					"path":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "first/second",
+					},
+					"name":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "myObj",
+					},
+					"v":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "value",
+					},
+					},
+				},
+				{
+					opcode: "json_setpathjson",
+					blockType: Scratch.BlockType.COMMAND,
+					isEdgeActivated: true,
+					text: "set path [path] of [name] to json [v]",
+					arguments: {
+					"path":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "first/second",
+					},
+					"name":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "myObj",
+					},
+					"v":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "{\"key\": \"value\"}",
+					},
+					},
+				},
+				{
 					opcode: "json_getpath",
 					blockType: Scratch.BlockType.REPORTER,
 					isEdgeActivated: true,
 					text: "get path [path] of [name]",
+					arguments: {
+					"path":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "first/second",
+					},
+					"name":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "myObj",
+					},
+					},
+				},
+				{
+					opcode: "json_getpathjson",
+					blockType: Scratch.BlockType.REPORTER,
+					isEdgeActivated: true,
+					text: "get path [path] of [name] as string",
 					arguments: {
 					"path":
 					{
@@ -292,15 +378,33 @@
 					},
 				},
 				{
-					opcode: "arr_sort",
+					opcode: "arr_pop",
 					blockType: Scratch.BlockType.COMMAND,
 					isEdgeActivated: true,
-					text: "sort array [name]",
+					text: "remove last item of array [name]",
 					arguments: {
 					"name":
 					{
 						type: Scratch.ArgumentType.STRING,
 						defaultValue: "myArray",
+					},
+					},
+				},
+				{
+					opcode: "arr_sort",
+					blockType: Scratch.BlockType.COMMAND,
+					isEdgeActivated: true,
+					text: "sort array [name] by [order]",
+					arguments: {
+					"name":
+					{
+						type: Scratch.ArgumentType.STRING,
+						defaultValue: "myArray",
+					},
+					"order":
+					{
+						type: Scratch.ArgumentType.STRING,
+						menu: "sortOrder",
 					},
 					},
 				},
@@ -452,6 +556,10 @@
 						acceptReporters: true,
 						items: "get_lists"
 					},
+					"sortOrder":{
+						acceptReporters: true,
+						items: ["ascending", "descending"]
+					},
 				},
             }
         }
@@ -547,6 +655,12 @@
 			let k = args["k"];
 			return data[nm][k];
 		}
+		json_getbool(args)
+		{
+			let nm = args["name"];
+			let k = args["k"];
+			return Scratch.Cast.toBoolean(data[nm][k]);
+		}
 		json_del(args)
 		{
 			let nm = args["name"];
@@ -568,16 +682,52 @@
 			let nm = args["name"];
 			return Object.values(data[nm]);
 		}
+		json_setpath(args)
+		{
+			let nm = args["name"];
+			let path = args["path"].split("/");
+			let c = "data[nm]";
+			for(var i = 0;i < path.length;i++)
+			{
+				c += ("[" + "\"" + path[i] + "\"" + "]");
+			}
+			c += " = " + args["v"];
+			eval(c);
+		}
+		json_setpathjson(args)
+		{
+			let nm = args["name"];
+			let path = args["path"].split("/");
+			let c = "data[nm]";
+			let v = JSON.parse(args["v"]);
+			for(var i = 0;i < path.length;i++)
+			{
+				c += ("[" + "\"" + path[i] + "\"" + "]");
+			}
+			c += " = v"
+			eval(c);
+		}
 		json_getpath(args)
 		{
 			let nm = args["name"];
 			let path = args["path"].split("/");
-			let c = "data[nm]"
+			let c = "data[nm]";
 			for(var i = 0;i < path.length;i++)
 			{
-				c += ("[" + "\"" + path[i] + "\"" + "]")
+				c += ("[" + "\"" + path[i] + "\"" + "]");
 			}
-			return eval(c)
+			return eval(c);
+		}
+		json_getpathjson(args)
+		{
+			let nm = args["name"];
+			let path = args["path"].split("/");
+			let c = "data[nm]";
+			for(var i = 0;i < path.length;i++)
+			{
+				c += ("[" + "\"" + path[i] + "\"" + "]");
+			}
+			return JSON.stringify(eval(c));
 		}
 		arr_length(args)
 		{
@@ -589,6 +739,11 @@
 			let nm = args["name"];
 			let v = args["v"];
 			data[nm].push(v);
+		}
+		arr_pop(args)
+		{
+			let nm = args["name"];
+			data[nm].pop();
 		}
 		arr_del(args)
 		{
@@ -606,6 +761,10 @@
 		{
 			let nm = args["name"];
 			data[nm].sort(Scratch.Cast.compare);
+			if(args["order"] == "descending")
+			{
+				data[nm].reverse()
+			}
 		}
 		arr_reverse(args)
 		{
